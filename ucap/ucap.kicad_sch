@@ -11100,7 +11100,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "SD05C-01F"
+		(property "Value" "SD05C-01FTG"
 			(at 129.54 173.9899 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -11144,7 +11144,7 @@
 				)
 			)
 		)
-		(property "LCSC Part #" "C502527"
+		(property "LCSC Part #" "C118264"
 			(at 127 172.72 90)
 			(hide yes)
 			(show_name no)
@@ -12604,7 +12604,7 @@
 				)
 			)
 		)
-		(property "LCSC Part #" "C1341847"
+		(property "LCSC Part #" "C1235412"
 			(at 231.14 99.06 0)
 			(hide yes)
 			(show_name no)
