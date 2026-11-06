@@ -4738,7 +4738,7 @@
 				)
 			)
 		)
-		(property "LCSC Part #" "C1341847"
+		(property "LCSC Part #" "C1235412"
 			(at 0 0 90)
 			(unlocked yes)
 			(layer "F.Fab")
@@ -16708,7 +16708,7 @@
 				)
 			)
 		)
-		(property "Value" "SD05C-01F"
+		(property "Value" "SD05C-01FTG"
 			(at 0.1 -1.9 180)
 			(layer "B.Fab")
 			(uuid "049b4310-024e-436c-911e-96aca415fe81")
@@ -16748,7 +16748,7 @@
 				(justify mirror)
 			)
 		)
-		(property "LCSC Part #" "C502527"
+		(property "LCSC Part #" "C118264"
 			(at 0 0 180)
 			(unlocked yes)
 			(layer "B.Fab")
