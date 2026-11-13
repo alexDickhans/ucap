@@ -100,9 +100,14 @@ A few comments do not say what the assembler expects:
 
 Parts that are easy to rotate wrong: U1, U2, U3, D1, J1, J2, and every part on the bottom. Those bottom parts are C3, C4, C6, C7, C9, C15, C24, D2, FB1, J2, L1, R3, R4, R5, R6, R7, R8, R10, R11, TP3, TP4, and U3. On the top, U1 pin 1 is the lower-left corner of the land. D1’s cathode is the end toward the I2C sockets. J1’s opening faces the top edge. On the bottom picture, U3 pin 1 (ground) is the lower pin on the right side of the package, and J2 pin 1 is the left contact. D2 is bidirectional, so turning it around does not swap the circuit.
 
+## Firmware
+
+PlatformIO firmware for the STM32G474 lives in [`firmware/`](firmware/README.md). It drives the COMP1+TIM2 capacitance path, the four Qwiic I2C buses, an LIS3MDL magnetometer, and up to three SparkFun VL53L5CX ToF imagers.
+
 ## Design files
 
 - `ucap/ucap.kicad_pro`, `ucap/ucap.kicad_sch`, `ucap/ucap.kicad_pcb` — KiCad 10 project
 - `ucap/production/ucap.zip` — gerbers and drill
 - `ucap/production/ucap-bom.csv` — bill of materials
 - `ucap/production/ucap-pos.csv` — placement, both sides
+- `firmware/` — board bring-up and sensor firmware
