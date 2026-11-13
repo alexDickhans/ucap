@@ -43,3 +43,9 @@ fp-info-cache
 
 # Local project settings
 *.kicad_prl
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
