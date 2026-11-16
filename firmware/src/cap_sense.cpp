@@ -24,6 +24,16 @@ volatile bool g_capture_done = false;
 volatile bool g_capture_valid = false;
 volatile bool g_capture_armed = false;
 
+/*
+ * Discharge hold before each measurement, scaled to the load. A trip at
+ * Vdd/2 takes t = 0.693·R·C, so 8·t ≈ 5.5·τ, which leaves < 0.5% of Vdd
+ * on the node. After a timeout the load is at least timeout-sized, so the
+ * next discharge uses 8·timeout.
+ */
+constexpr uint32_t kDischargeMinUs = 20;
+constexpr uint32_t kDischargePerChargeTime = 8;
+uint32_t g_discharge_us = 500;
+
 /* TIM2 tick rate (no prescaler), measured from the clock tree at init. */
 float g_tim_hz = 170'000'000.0f;
 
@@ -117,9 +127,14 @@ CapSample cap_sense_measure(uint32_t timeout_us) {
   CapSample out{};
   out.valid = false;
 
-  /* Discharge through R5. */
+  /* Discharge through R5 for long enough to cover the last load seen. */
   GPIOA->BSRR = (1u << 16);
-  delayMicroseconds(500);
+  if (g_discharge_us >= 1000u) {
+    delay(g_discharge_us / 1000u);
+    delayMicroseconds(g_discharge_us % 1000u);
+  } else {
+    delayMicroseconds(g_discharge_us);
+  }
 
   g_capture_done = false;
   g_capture_valid = false;
@@ -140,6 +155,7 @@ CapSample cap_sense_measure(uint32_t timeout_us) {
       g_capture_armed = false;
       GPIOA->BSRR = (1u << 16);
       TIM2->CCER &= ~TIM_CCER_CC1E;
+      g_discharge_us = kDischargePerChargeTime * timeout_us;
       return out;
     }
   }
@@ -151,6 +167,12 @@ CapSample cap_sense_measure(uint32_t timeout_us) {
   out.time_s = static_cast<float>(out.ticks) / g_tim_hz;
   out.capacitance_f = out.time_s / (CAP_R_OHMS * 0.693147f);
   out.valid = true;
+
+  const uint32_t charge_us = static_cast<uint32_t>(out.time_s * 1e6f) + 1u;
+  g_discharge_us = charge_us * kDischargePerChargeTime;
+  if (g_discharge_us < kDischargeMinUs) {
+    g_discharge_us = kDischargeMinUs;
+  }
 
   GPIOA->BSRR = (1u << 16);
   return out;
