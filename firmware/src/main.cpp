@@ -28,6 +28,9 @@ namespace {
 Lis3mdl *g_mag = nullptr;
 TofBank g_tof;
 uint32_t g_last_print_ms = 0;
+/* Latest frame per sensor; kept across loop() calls because sensors
+ * produce data at 15 Hz while the loop runs much faster. */
+TofFrame g_tof_frames[TofBank::kMax] = {};
 } // namespace
 
 void setup() {
@@ -76,7 +79,7 @@ void loop() {
     mag = g_mag->read();
   }
 
-  TofFrame frames[TofBank::kMax];
+  TofFrame *frames = g_tof_frames;
   for (unsigned i = 0; i < TofBank::kMax; ++i) {
     (void)g_tof.poll(i, frames[i]);
   }

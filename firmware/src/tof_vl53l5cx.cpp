@@ -17,7 +17,10 @@ void TofBank::begin(TwoWire *buses[kMax]) {
       continue;
     }
     /* Prefer 4x4 @ higher rate for USB telemetry bandwidth; 8x8 optional later. */
-    sensors_[i].setResolution(4 * 4);
+    if (!sensors_[i].setResolution(4 * 4)) {
+      continue;
+    }
+    resolution_[i] = 4 * 4;
     sensors_[i].setRangingFrequency(15);
     if (!sensors_[i].startRanging()) {
       continue;
@@ -33,8 +36,8 @@ bool TofBank::present(unsigned idx) const {
 }
 
 bool TofBank::poll(unsigned idx, TofFrame &out) {
-  out = {};
   if (!present(idx) || !ranging_[idx]) {
+    out = {};
     return false;
   }
   if (!sensors_[idx].isDataReady()) {
@@ -44,7 +47,8 @@ bool TofBank::poll(unsigned idx, TofFrame &out) {
   if (!sensors_[idx].getRangingData(&data)) {
     return false;
   }
-  const uint8_t res = sensors_[idx].getResolution();
+  /* Resolution was set once in begin(); avoid an I2C read per frame. */
+  const uint8_t res = resolution_[idx];
   out.resolution = res;
   const unsigned n = (res == 64) ? 64u : 16u;
   dma_copy(out.distance_mm, data.distance_mm, n * sizeof(int16_t));
