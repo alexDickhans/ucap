@@ -99,7 +99,7 @@ class UcapSensorNode(Node):
             )
             self._buf = ''
             self.get_logger().info(f'Opened {self._port} @ {self._baud}')
-        except SerialException as exc:
+        except (SerialException, OSError) as exc:
             self._ser = None
             self.get_logger().warn(f'Waiting for {self._port}: {exc}', throttle_duration_sec=5.0)
 
@@ -111,7 +111,9 @@ class UcapSensorNode(Node):
             if waiting:
                 chunk = self._ser.read(waiting)
                 self._buf += chunk.decode('utf-8', errors='replace')
-        except SerialException as exc:
+        except (SerialException, OSError) as exc:
+            # in_waiting's TIOCINQ ioctl raises a plain OSError on unplug,
+            # which SerialException (an OSError subclass) does not cover.
             self.get_logger().warn(f'Serial read failed: {exc}')
             self._close_serial()
             return
