@@ -21,9 +21,10 @@ void dma_copy(void *dst, const void *src, size_t nbytes) {
     ch->CPAR = reinterpret_cast<uint32_t>(src);
     ch->CMAR = reinterpret_cast<uint32_t>(dst);
     ch->CNDTR = nbytes / 4u;
-    /* MEM2MEM | MINC | PINC | PSIZE=32 | MSIZE=32 | DIR=from peri(src) */
+    /* MEM2MEM | MINC | PINC | PSIZE=32 | MSIZE=32 | DIR=0: read CPAR (src),
+     * write CMAR (dst). DIR=1 would copy the other way. */
     ch->CCR = DMA_CCR_MEM2MEM | DMA_CCR_MINC | DMA_CCR_PINC | DMA_CCR_PSIZE_1 |
-              DMA_CCR_MSIZE_1 | DMA_CCR_DIR | DMA_CCR_EN;
+              DMA_CCR_MSIZE_1 | DMA_CCR_EN;
     const uint32_t t0 = millis();
     while (ch->CNDTR != 0) {
       if ((millis() - t0) > 5) {
