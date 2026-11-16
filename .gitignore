@@ -49,3 +49,6 @@ __pycache__/
 *.py[cod]
 *.egg-info/
 .pytest_cache/
+
+# ROS 2 package manifests (the *.xml rule above is for KiCad exports)
+!package.xml
