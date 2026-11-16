@@ -93,7 +93,7 @@ void loop() {
     if (cap.valid) {
       Serial.print(cap.capacitance_f * 1e15f, 1);
       Serial.print(F(" t_us="));
-      Serial.print(cap.time_s * 1e6f, 2);
+      Serial.print(cap.time_s * 1e6f, 3); /* ~6 ns/tick: keep ns digits */
     } else {
       Serial.print(F("timeout"));
     }
