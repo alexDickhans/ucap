@@ -43,3 +43,12 @@ fp-info-cache
 
 # Local project settings
 *.kicad_prl
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# ROS 2 package manifests (the *.xml rule above is for KiCad exports)
+!package.xml

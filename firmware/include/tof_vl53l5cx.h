@@ -27,11 +27,13 @@ public:
   void begin(TwoWire *buses[kMax]);
   unsigned presentCount() const { return present_count_; }
   bool present(unsigned idx) const;
+  /* Updates `out` only when a new frame is ready; otherwise leaves it as is. */
   bool poll(unsigned idx, TofFrame &out);
 
 private:
   SparkFun_VL53L5CX sensors_[kMax];
   bool online_[kMax] = {};
   bool ranging_[kMax] = {};
+  uint8_t resolution_[kMax] = {};
   unsigned present_count_ = 0;
 };

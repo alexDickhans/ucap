@@ -26,7 +26,7 @@ public:
 private:
   TwoWire &wire_;
   uint8_t addr_;
-  float scale_uT_per_lsb_ = 0.684f; /* ±16 gauss default after cfg */
+  float scale_uT_per_lsb_ = 100.0f / 1711.0f; /* ±16 gauss, set in begin() */
 
   bool writeReg(uint8_t reg, uint8_t val);
   bool readRegs(uint8_t reg, uint8_t *buf, uint8_t len);

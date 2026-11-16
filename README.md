@@ -104,6 +104,10 @@ Parts that are easy to rotate wrong: U1, U2, U3, D1, J1, J2, and every part on t
 
 PlatformIO firmware for the STM32G474 lives in [`firmware/`](firmware/README.md). It drives the COMP1+TIM2 capacitance path, the four Qwiic I2C buses, an LIS3MDL magnetometer, and up to three SparkFun VL53L5CX ToF imagers.
 
+## ROS 2
+
+[`ros2/ucap_sensor/`](ros2/ucap_sensor/README.md) is an `ament_python` node that reads the board’s USB CDC telemetry (115200) and publishes capacitance, ADC, magnetometer, and ToF topics.
+
 ## Design files
 
 - `ucap/ucap.kicad_pro`, `ucap/ucap.kicad_sch`, `ucap/ucap.kicad_pcb` — KiCad 10 project
@@ -111,3 +115,4 @@ PlatformIO firmware for the STM32G474 lives in [`firmware/`](firmware/README.md)
 - `ucap/production/ucap-bom.csv` — bill of materials
 - `ucap/production/ucap-pos.csv` — placement, both sides
 - `firmware/` — board bring-up and sensor firmware
+- `ros2/ucap_sensor/` — ROS 2 USB CDC host node

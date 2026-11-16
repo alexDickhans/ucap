@@ -25,7 +25,7 @@ Schematic sheet **RC Delay Sensing**:
 | `sense` | PA1 | `COMP1_INP` (also `ADC1_IN2`) |
 | `v_th` | PA4 | `COMP1_INM` from R7/R8 = Vdd/2 (also `ADC2_IN17`) |
 
-Measurement: discharge → arm COMP1 rising EXTI → start TIM2 → drive PA0 high → latch TIM2 on threshold.  
+Measurement: discharge → arm TIM2 CH1 capture (COMP1_OUT via TISEL) → reset TIM2 → drive PA0 high → hardware latches TIM2 on threshold; the COMP1 EXTI interrupt stops charging. TIM2 runs unprescaled (~170 MHz, ~5.9 ns/tick); its 32-bit range covers the full timeout, so resolution is never reduced.  
 With Vth = 0.5·Vdd: `C = t / (R · ln(2))`, R = 1 MΩ.
 
 ## I2C buses (Qwiic J3–J6)

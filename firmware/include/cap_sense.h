@@ -12,7 +12,8 @@
  * MCU blocks (from pin AF list in ucap.kicad_sch):
  *   PA1 = COMP1_INP
  *   PA4 = COMP1_INM
- *   TIM2 free-running counter latched on COMP1 rising (sense crosses v_th)
+ *   TIM2 free-running at the full timer clock (no prescaler, ~5.9 ns/tick);
+ *   COMP1_OUT → TIM2 CH1 hardware input capture on rising (sense crosses v_th)
  *
  * At Vth = 0.5·Vdd: t = R·C·ln(2)  ⇒  C = t / (R·ln(2))
  */

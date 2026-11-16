@@ -1,0 +1,11 @@
+ucap_sensor:
+  ros__parameters:
+    port: "/dev/ttyACM0"
+    baud: 115200
+    frame_id: "ucap_link"
+    publish_raw: true
+    tof_fov_rad: 0.785398
+    tof_min_range_m: 0.02
+    tof_max_range_m: 4.0
+    reconnect_period_s: 1.0
+    read_period_s: 0.02

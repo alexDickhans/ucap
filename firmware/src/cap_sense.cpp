@@ -8,18 +8,41 @@
  * COMP1 + TIM2 capacitance measurement (register-level for G4).
  *
  * PA1 = COMP1_INP, PA4 = COMP1_INM (INMSEL = 0b0110 → PA4 per RM0440).
- * COMP1 EXTI (line 21) rising edge latches TIM2 CNT.
+ *
+ * TIM2 runs unprescaled at the full timer clock (170 MHz → ~5.9 ns/tick).
+ * It is 32-bit, so even the 50 ms timeout uses < 0.2% of its range and no
+ * prescaling is ever needed. COMP1_OUT is routed to TIM2 TI1 (TISEL) and
+ * latched into CCR1 by hardware input capture, so the count does not
+ * depend on interrupt latency. The COMP1 EXTI (line 21) interrupt only
+ * stops charging and collects CCR1.
  */
 
 namespace {
 
 volatile uint32_t g_capture_ticks = 0;
 volatile bool g_capture_done = false;
+volatile bool g_capture_valid = false;
 volatile bool g_capture_armed = false;
 
-/* TIM2 tick rate after PSC (170 MHz / 17 ≈ 10 MHz). */
-constexpr float kTimHz = 10'000'000.0f;
-constexpr uint32_t kTimPsc = 16; /* ARR clock = Ftim / (PSC+1) */
+/*
+ * Discharge hold before each measurement, scaled to the load. A trip at
+ * Vdd/2 takes t = 0.693·R·C, so 8·t ≈ 5.5·τ, which leaves < 0.5% of Vdd
+ * on the node. After a timeout the load is at least timeout-sized, so the
+ * next discharge uses 8·timeout.
+ */
+constexpr uint32_t kDischargeMinUs = 20;
+constexpr uint32_t kDischargePerChargeTime = 8;
+uint32_t g_discharge_us = 500;
+
+/* TIM2 tick rate (no prescaler), measured from the clock tree at init. */
+float g_tim_hz = 170'000'000.0f;
+
+/* TIM2 kernel clock: PCLK1, doubled when the APB1 prescaler divides. */
+uint32_t tim2_clock_hz() {
+  const uint32_t pclk1 = HAL_RCC_GetPCLK1Freq();
+  const bool apb1_divided = (RCC->CFGR & RCC_CFGR_PPRE1_2) != 0;
+  return apb1_divided ? pclk1 * 2u : pclk1;
+}
 
 void gpio_set_mode(GPIO_TypeDef *port, unsigned pin_no, uint32_t mode, uint32_t speed = 0) {
   /* mode: 0=input 1=output 2=AF 3=analog */
@@ -38,10 +61,15 @@ extern "C" void COMP1_2_3_IRQHandler(void) {
   if (EXTI->PR1 & (1u << 21)) {
     EXTI->PR1 = (1u << 21); /* W1C */
     if (g_capture_armed) {
-      g_capture_ticks = TIM2->CNT;
+      GPIOA->BSRR = (1u << 16); /* PA0 reset — stop charging */
+      TIM2->CCER &= ~TIM_CCER_CC1E; /* no further captures this cycle */
+      const uint32_t sr = TIM2->SR;
+      /* CCR1 holds the hardware-latched trip time. Overcapture means the
+       * comparator chattered and the first edge was overwritten. */
+      g_capture_valid = (sr & TIM_SR_CC1IF) && !(sr & TIM_SR_CC1OF);
+      g_capture_ticks = TIM2->CCR1;
       g_capture_done = true;
       g_capture_armed = false;
-      GPIOA->BSRR = (1u << 16); /* PA0 reset — stop charging */
     }
   }
 }
@@ -59,10 +87,17 @@ void cap_sense_init() {
   gpio_set_mode(GPIOA, 1, 3);
   gpio_set_mode(GPIOA, 4, 3);
 
-  /* TIM2 free-running 32-bit @ ~10 MHz. */
+  /* TIM2 free-running 32-bit at the full timer clock (PSC = 0). */
+  g_tim_hz = static_cast<float>(tim2_clock_hz());
   TIM2->CR1 = 0;
-  TIM2->PSC = kTimPsc;
+  TIM2->PSC = 0;
   TIM2->ARR = 0xFFFFFFFFu;
+  /* CH1 input capture from COMP1_OUT: TISEL.TI1SEL = 0001 (RM0440),
+   * CC1S = 01 (IC1 on TI1), no filter/prescaler, rising edge. */
+  TIM2->TISEL = (TIM2->TISEL & ~TIM_TISEL_TI1SEL) | (1u << TIM_TISEL_TI1SEL_Pos);
+  TIM2->CCMR1 = (TIM2->CCMR1 & ~(TIM_CCMR1_CC1S | TIM_CCMR1_IC1F | TIM_CCMR1_IC1PSC)) |
+                TIM_CCMR1_CC1S_0;
+  TIM2->CCER &= ~(TIM_CCER_CC1E | TIM_CCER_CC1P | TIM_CCER_CC1NP);
   TIM2->EGR = TIM_EGR_UG;
   TIM2->CNT = 0;
   TIM2->CR1 = TIM_CR1_CEN;
@@ -92,12 +127,21 @@ CapSample cap_sense_measure(uint32_t timeout_us) {
   CapSample out{};
   out.valid = false;
 
-  /* Discharge through R5. */
+  /* Discharge through R5 for long enough to cover the last load seen. */
   GPIOA->BSRR = (1u << 16);
-  delayMicroseconds(500);
+  if (g_discharge_us >= 1000u) {
+    delay(g_discharge_us / 1000u);
+    delayMicroseconds(g_discharge_us % 1000u);
+  } else {
+    delayMicroseconds(g_discharge_us);
+  }
 
   g_capture_done = false;
+  g_capture_valid = false;
   g_capture_ticks = 0;
+  TIM2->CCER &= ~TIM_CCER_CC1E;
+  TIM2->SR = ~(TIM_SR_CC1IF | TIM_SR_CC1OF); /* rc_w0 */
+  TIM2->CCER |= TIM_CCER_CC1E;
   g_capture_armed = true;
 
   __disable_irq();
@@ -110,14 +154,25 @@ CapSample cap_sense_measure(uint32_t timeout_us) {
     if ((micros() - t0) > timeout_us) {
       g_capture_armed = false;
       GPIOA->BSRR = (1u << 16);
+      TIM2->CCER &= ~TIM_CCER_CC1E;
+      g_discharge_us = kDischargePerChargeTime * timeout_us;
       return out;
     }
   }
 
+  if (!g_capture_valid) {
+    return out;
+  }
   out.ticks = g_capture_ticks;
-  out.time_s = static_cast<float>(out.ticks) / kTimHz;
+  out.time_s = static_cast<float>(out.ticks) / g_tim_hz;
   out.capacitance_f = out.time_s / (CAP_R_OHMS * 0.693147f);
   out.valid = true;
+
+  const uint32_t charge_us = static_cast<uint32_t>(out.time_s * 1e6f) + 1u;
+  g_discharge_us = charge_us * kDischargePerChargeTime;
+  if (g_discharge_us < kDischargeMinUs) {
+    g_discharge_us = kDischargeMinUs;
+  }
 
   GPIOA->BSRR = (1u << 16);
   return out;

@@ -49,7 +49,9 @@ static constexpr uint32_t PIN_I2C1_SDA = PF0;
 static constexpr uint32_t PIN_I2C1_SCL = PC4;
 static constexpr uint32_t PIN_I2C2_SDA = PC11;
 static constexpr uint32_t PIN_I2C2_SCL = PA8;
-static constexpr uint32_t PIN_I2C3_SDA = PB7;
+/* PB7's first SDA pinmap entry is I2C1 (AF4); I2C4 (AF3) is PB7_ALT1.
+ * Plain PB7 + PC6 (I2C4_SCL) would mismatch and leave bus 3 dead. */
+static constexpr uint32_t PIN_I2C3_SDA = PB7_ALT1;
 static constexpr uint32_t PIN_I2C3_SCL = PC6;
 
 static constexpr unsigned UCAP_I2C_BUS_COUNT = 4;

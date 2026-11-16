@@ -56,11 +56,11 @@ bool Lis3mdl::begin() {
   if (!writeReg(REG_CTRL2, 0x60)) {
     return false;
   }
-  scale_uT_per_lsb_ = 1000.0f / 1711.0f;
+  /* 1 gauss = 100 uT. */
+  scale_uT_per_lsb_ = 100.0f / 1711.0f;
 
-  /* CTRL1: temp enable, XY ultra-high-performance, 80 Hz ODR (0x02<<2? OM=11 UHP, DO=111 80Hz) */
-  /* TEMP_EN | OM[1:0]=11 | DO[2:0]=111 | FAST_ODR=0 | ST=0 → 0xFE */
-  if (!writeReg(REG_CTRL1, 0xFE)) {
+  /* CTRL1: TEMP_EN | OM[1:0]=11 (XY UHP) | DO[2:0]=111 (80 Hz) | FAST_ODR=0 | ST=0 → 0xFC */
+  if (!writeReg(REG_CTRL1, 0xFC)) {
     return false;
   }
   /* CTRL4: Z UHP OMZ=11 */
